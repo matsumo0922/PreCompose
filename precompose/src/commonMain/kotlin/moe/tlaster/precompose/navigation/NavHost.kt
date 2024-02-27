@@ -8,15 +8,19 @@ import androidx.compose.animation.core.SeekableTransitionState
 import androidx.compose.animation.core.rememberTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.updateTransition
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.AnchoredDraggableState
 import androidx.compose.foundation.gestures.DraggableAnchors
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.anchoredDraggable
 import androidx.compose.foundation.gestures.snapTo
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsDraggedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -25,19 +29,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.SaveableStateHolder
 import androidx.compose.runtime.saveable.rememberSaveableStateHolder
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.CancellationException
 import moe.tlaster.precompose.lifecycle.LocalLifecycleOwner
 import moe.tlaster.precompose.lifecycle.currentLocalLifecycleOwner
 import moe.tlaster.precompose.navigation.route.ComposeRoute
@@ -100,6 +101,8 @@ fun NavHost(
 
     val currentEntry by navigator.stackManager.currentBackStackEntry.collectAsState(null)
 
+    val backStacks by navigator.stackManager.backStacks.collectAsState()
+
     LaunchedEffect(currentEntry, composeStateHolder) {
         val entry = currentEntry
         val route = entry?.route
@@ -116,28 +119,15 @@ fun NavHost(
             .currentSceneBackStackEntry.collectAsState(null)
         val prevSceneEntry by navigator.stackManager
             .prevSceneBackStackEntry.collectAsState(null)
-        var progress by remember { mutableFloatStateOf(0f) }
-        var inPredictiveBack by remember { mutableStateOf(false) }
-        PredictiveBackHandler(canGoBack) { backEvent ->
-            inPredictiveBack = true
-            progress = 0f
-            try {
-                backEvent.collect {
-                    progress = it
-                }
-                if (progress != 1f) {
-                    // play the animation to the end
-                    progress = 1f
-                }
-                // inPredictiveBack = false
-                // navigator.goBack()
-            } catch (e: CancellationException) {
-                inPredictiveBack = false
-            }
+        BackHandler(canGoBack) {
+            navigator.goBack()
         }
         currentSceneEntry?.let { sceneEntry ->
+            val intSource = remember { MutableInteractionSource() }
+            val isDragged by intSource.collectIsDraggedAsState()
+
             val actualSwipeProperties = sceneEntry.swipeProperties ?: swipeProperties
-            val state = if (actualSwipeProperties != null && !inPredictiveBack) {
+            val state = if (actualSwipeProperties != null) {
                 val density = LocalDensity.current
                 val width = constraints.maxWidth.toFloat()
                 val state = remember {
@@ -166,32 +156,16 @@ fun NavHost(
             } else {
                 null
             }
-            val showPrev by remember(state, inPredictiveBack, progress, prevSceneEntry) {
+            val showPrev by remember(state) {
                 derivedStateOf {
-                    if (state == null && !inPredictiveBack && prevSceneEntry == null) {
+                    if (state == null) {
                         false
                     } else {
-                        (state != null && state.offset > 0f) || progress > 0f
+                        state.offset > 0f
                     }
                 }
             }
-            val transition = if (showPrev && inPredictiveBack) {
-                val transitionState by remember(sceneEntry) {
-                    mutableStateOf(SeekableTransitionState(sceneEntry, prevSceneEntry!!))
-                }
-                LaunchedEffect(progress) {
-                    if (progress == 1f && inPredictiveBack) {
-                        // play the animation to the end
-                        transitionState.animateToTargetState()
-                        inPredictiveBack = false
-                        navigator.goBack()
-                        progress = 0f
-                    } else {
-                        transitionState.snapToFraction(progress)
-                    }
-                }
-                rememberTransition(transitionState, label = "entry")
-            } else if (showPrev && state != null) {
+            val transition = if (showPrev && prevSceneEntry != null && state != null) {
                 val transitionState by remember(sceneEntry) {
                     mutableStateOf(SeekableTransitionState(sceneEntry, prevSceneEntry!!))
                 }
@@ -216,11 +190,16 @@ fun NavHost(
                 val actualTransaction = run {
                     if (navigator.stackManager.contains(initialState) && !showPrev) targetState else initialState
                 }.navTransition ?: navTransition
+
+                val linearDestroyTransition = slideOutHorizontally(
+                    animationSpec = tween(400),
+                ) { it }
+
                 if (!navigator.stackManager.contains(initialState) || showPrev) {
                     ContentTransform(
                         targetContentEnter = actualTransaction.resumeTransition,
-                        initialContentExit = actualTransaction.destroyTransition,
-                        targetContentZIndex = actualTransaction.enterTargetContentZIndex,
+                        initialContentExit = if (isDragged) linearDestroyTransition else actualTransaction.destroyTransition,
+                        targetContentZIndex = backStacks.size.toFloat(),
                         // sizeTransform will cause the content to be resized
                         // when the transition is running with swipe back
                         // I have no idea why
@@ -231,7 +210,7 @@ fun NavHost(
                     ContentTransform(
                         targetContentEnter = actualTransaction.createTransition,
                         initialContentExit = actualTransaction.pauseTransition,
-                        targetContentZIndex = actualTransaction.exitTargetContentZIndex,
+                        targetContentZIndex = backStacks.size.toFloat() + 1,
                         sizeTransform = null,
                     )
                 }
@@ -246,6 +225,8 @@ fun NavHost(
                 DragSlider(
                     state = state,
                     enabled = prevSceneEntry != null,
+                    spaceToSwipe = actualSwipeProperties?.spaceToSwipe ?: 32.dp,
+                    interactionSource = intSource,
                 )
             }
         }
@@ -304,12 +285,14 @@ private fun BackStackEntry.ComposeContent() {
 private fun DragSlider(
     state: AnchoredDraggableState<DragAnchors>,
     enabled: Boolean = true,
-    spaceToSwipe: Dp = 10.dp,
+    spaceToSwipe: Dp = 40.dp,
+    interactionSource: MutableInteractionSource? = null,
     modifier: Modifier = Modifier,
 ) {
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Box(
         modifier = modifier
+            .padding(vertical = 128.dp)
             .fillMaxHeight()
             .width(spaceToSwipe)
             .anchoredDraggable(
@@ -317,6 +300,7 @@ private fun DragSlider(
                 orientation = Orientation.Horizontal,
                 enabled = enabled,
                 reverseDirection = isRtl,
+                interactionSource = interactionSource,
             ),
     )
 }

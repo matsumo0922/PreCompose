@@ -2,7 +2,7 @@ import java.util.Properties
 
 plugins {
     kotlin("multiplatform")
-    alias(libs.plugins.jetbrains.compose)
+    alias(libsSubmodule.plugins.jetbrains.compose)
     id("com.android.library")
     id("maven-publish")
     id("signing")
@@ -37,8 +37,8 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 compileOnly(compose.foundation)
-                implementation(project(":precompose"))
-                compileOnly(libs.molecule.runtime)
+                implementation(project(":precompose:precompose"))
+                compileOnly(libsSubmodule.molecule.runtime)
             }
         }
         val commonTest by getting {
@@ -50,27 +50,27 @@ kotlin {
         }
         val androidMain by getting {
             dependencies {
-                api(libs.androidx.activity.ktx)
-                implementation(libs.foundation)
+                api(libsSubmodule.androidx.activity.ktx)
+                implementation(libsSubmodule.foundation)
             }
         }
         val androidUnitTest by getting {
             dependencies {
                 implementation(kotlin("test-junit"))
-                implementation(libs.junit)
+                implementation(libsSubmodule.junit)
             }
         }
         val jvmMain by getting {
             dependencies {
                 implementation(compose.foundation)
-                api(libs.kotlinx.coroutines.swing)
+                api(libsSubmodule.kotlinx.coroutines.swing)
             }
         }
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
-                implementation(libs.junit.jupiter.api)
-                runtimeOnly(libs.junit.jupiter.engine)
+                implementation(libsSubmodule.junit.jupiter.api)
+                runtimeOnly(libsSubmodule.junit.jupiter.engine)
             }
         }
         val jsMain by getting {

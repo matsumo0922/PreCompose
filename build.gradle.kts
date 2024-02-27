@@ -1,8 +1,8 @@
 plugins {
-    alias(libs.plugins.android.application).apply(false)
-    alias(libs.plugins.android.library).apply(false)
-    alias(libs.plugins.kotlin.multiplatform).apply(false)
-    alias(libs.plugins.spotless)
+    alias(libsSubmodule.plugins.android.application).apply(false)
+    alias(libsSubmodule.plugins.android.library).apply(false)
+    alias(libsSubmodule.plugins.kotlin.multiplatform).apply(false)
+    alias(libsSubmodule.plugins.spotless)
 }
 
 allprojects {

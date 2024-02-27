@@ -1,9 +1,9 @@
 import java.util.Properties
 
 plugins {
-    alias(libs.plugins.kotlin.multiplatform)
-    alias(libs.plugins.jetbrains.compose)
-    alias(libs.plugins.android.library)
+    alias(libsSubmodule.plugins.kotlin.multiplatform)
+    alias(libsSubmodule.plugins.jetbrains.compose)
+    alias(libsSubmodule.plugins.android.library)
     id("maven-publish")
     id("signing")
 }
@@ -42,7 +42,7 @@ kotlin {
                 compileOnly(compose.foundation)
                 compileOnly(compose.animation)
                 compileOnly(compose.material)
-                api(libs.kotlinx.coroutines.core)
+                api(libsSubmodule.kotlinx.coroutines.core)
             }
         }
         val commonTest by getting {
@@ -51,28 +51,28 @@ kotlin {
                 api(compose.animation)
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
-                implementation(libs.kotlinx.coroutines.test)
+                implementation(libsSubmodule.kotlinx.coroutines.test)
                 // @OptIn(org.jetbrains.compose.ExperimentalComposeLibrary::class)
                 // implementation(compose.uiTestJUnit4)
             }
         }
         val androidMain by getting {
             dependencies {
-                implementation(libs.foundation)
-                implementation(libs.animation)
-                implementation(libs.androidx.material)
-                api(libs.androidx.activity.ktx)
-                api(libs.androidx.appcompat)
-                implementation(libs.androidx.lifecycle.runtime.ktx)
-                api(libs.androidx.savedstate.ktx)
-                implementation(libs.androidx.lifecycle.viewmodel.compose)
-                implementation(libs.androidx.activity.compose)
+                implementation(libsSubmodule.foundation)
+                implementation(libsSubmodule.animation)
+                implementation(libsSubmodule.androidx.material)
+                api(libsSubmodule.androidx.activity.ktx)
+                api(libsSubmodule.androidx.appcompat)
+                implementation(libsSubmodule.androidx.lifecycle.runtime.ktx)
+                api(libsSubmodule.androidx.savedstate.ktx)
+                implementation(libsSubmodule.androidx.lifecycle.viewmodel.compose)
+                implementation(libsSubmodule.androidx.activity.compose)
             }
         }
         val androidUnitTest by getting {
             dependencies {
                 implementation(kotlin("test-junit"))
-                implementation(libs.junit)
+                implementation(libsSubmodule.junit)
             }
         }
         val macosMain by getting {
@@ -87,14 +87,14 @@ kotlin {
                 implementation(compose.foundation)
                 implementation(compose.animation)
                 implementation(compose.material)
-                api(libs.kotlinx.coroutines.swing)
+                api(libsSubmodule.kotlinx.coroutines.swing)
             }
         }
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
-                implementation(libs.junit.jupiter.api)
-                runtimeOnly(libs.junit.jupiter.engine)
+                implementation(libsSubmodule.junit.jupiter.api)
+                runtimeOnly(libsSubmodule.junit.jupiter.engine)
             }
         }
         val jsMain by getting {

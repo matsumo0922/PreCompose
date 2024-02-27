@@ -2,7 +2,7 @@ import java.util.Properties
 
 plugins {
     kotlin("multiplatform")
-    alias(libs.plugins.jetbrains.compose)
+    alias(libsSubmodule.plugins.jetbrains.compose)
     id("com.android.library")
     id("maven-publish")
     id("signing")
@@ -40,18 +40,18 @@ kotlin {
     js(IR) {
         browser()
     }
-    wasmJs {
+    /*wasmJs {
         browser()
         binaries.executable()
-    }
+    }*/
     sourceSets {
         val commonMain by getting {
             dependencies {
                 compileOnly(compose.foundation)
-                implementation(libs.koin)
-                implementation(libs.koin.compose)
-                implementation(project(":precompose"))
-                implementation(project(":precompose-viewmodel"))
+                implementation(libsSubmodule.koin)
+                implementation(libsSubmodule.koin.compose)
+                implementation(project(":precompose:precompose"))
+                implementation(project(":precompose:precompose-viewmodel"))
             }
         }
         val commonTest by getting {
@@ -63,27 +63,27 @@ kotlin {
         }
         val androidMain by getting {
             dependencies {
-                api(libs.androidx.activity.ktx)
-                implementation(libs.foundation)
+                api(libsSubmodule.androidx.activity.ktx)
+                implementation(libsSubmodule.foundation)
             }
         }
         val androidUnitTest by getting {
             dependencies {
                 implementation(kotlin("test-junit"))
-                implementation(libs.junit)
+                implementation(libsSubmodule.junit)
             }
         }
         val jvmMain by getting {
             dependencies {
                 implementation(compose.foundation)
-                api(libs.kotlinx.coroutines.swing)
+                api(libsSubmodule.kotlinx.coroutines.swing)
             }
         }
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test-junit5"))
-                implementation(libs.junit.jupiter.api)
-                runtimeOnly(libs.junit.jupiter.engine)
+                implementation(libsSubmodule.junit.jupiter.api)
+                runtimeOnly(libsSubmodule.junit.jupiter.engine)
             }
         }
         val macosMain by getting {
