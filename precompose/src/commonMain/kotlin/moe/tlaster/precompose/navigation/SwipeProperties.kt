@@ -15,4 +15,5 @@ class SwipeProperties(
     val spaceToSwipe: Dp = 10.dp,
     val positionalThreshold: (totalDistance: Float) -> Float = { distance: Float -> distance * 0.5f },
     val velocityThreshold: Density.() -> Float = { 56.dp.toPx() },
+    val isEnable: Boolean = true,
 )

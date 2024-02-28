@@ -127,7 +127,7 @@ fun NavHost(
             val isDragged by intSource.collectIsDraggedAsState()
 
             val actualSwipeProperties = sceneEntry.swipeProperties ?: swipeProperties
-            val state = if (actualSwipeProperties != null) {
+            val state = if (actualSwipeProperties != null && actualSwipeProperties.isEnable) {
                 val density = LocalDensity.current
                 val width = constraints.maxWidth.toFloat()
                 val state = remember {
